@@ -26,6 +26,7 @@ public class LogTemplateProvider implements PostfixTemplateProvider {
             });
 
     public LogTemplateProvider() {
+        System.out.println("LogTemplateProvider.LogTemplateProvider");
     }
 
     private static boolean isSemicolonNeeded(@NotNull PsiFile file, @NotNull Editor editor) {
@@ -35,6 +36,7 @@ public class LogTemplateProvider implements PostfixTemplateProvider {
     @NotNull
     @Override
     public Set<PostfixTemplate> getTemplates() {
+        System.out.println("LogTemplateProvider.getTemplates");
         return templates;
     }
 
@@ -45,18 +47,18 @@ public class LogTemplateProvider implements PostfixTemplateProvider {
 
     @Override
     public void preExpand(@NotNull PsiFile psiFile, @NotNull Editor editor) {
-        System.out.println("---preExpand---");
+        System.out.println("LogTemplateProvider.preExpand");
     }
 
     @Override
     public void afterExpand(@NotNull PsiFile psiFile, @NotNull Editor editor) {
-        System.out.println("---afterExpand---");
+        System.out.println("LogTemplateProvider.afterExpand");
     }
 
     @NotNull
     @Override
     public PsiFile preCheck(@NotNull PsiFile psiFile, @NotNull Editor editor, int i) {
-        System.out.println("---preCheck---");
+        System.out.println("LogTemplateProvider.preCheck");
         Document document = psiFile.getViewProvider().getDocument();
         assert document != null;
         CharSequence sequence = document.getCharsSequence();

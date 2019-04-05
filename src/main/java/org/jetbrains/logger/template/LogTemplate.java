@@ -17,11 +17,12 @@ public class LogTemplate extends PostfixTemplate {
 
     @Override
     public boolean isApplicable(@NotNull PsiElement psiElement, @NotNull Document document, int i) {
-        System.out.println("isApplicable");
+        System.out.println("LogTemplate.isApplicable");
         return isApplicable;
     }
 
     @Override
     public void expand(@NotNull PsiElement psiElement, @NotNull Editor editor) {
+        System.out.println("LogTemplate.expand");
     }
 }
