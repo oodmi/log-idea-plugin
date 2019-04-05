@@ -1,0 +1,22 @@
+plugins {
+    id 'org.jetbrains.intellij' version '0.4.7'
+}
+
+
+apply plugin: 'idea'
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'java'
+
+group 'oodmi'
+version '1.0'
+
+intellij {
+    version '2017.3.1'
+    plugins 'coverage' //Bundled plugin dependencies
+    pluginName 'oodmi.log-idea-plugin'
+}
+patchPluginXml {
+    changeNotes """
+      Add change notes here.<br>
+      <em>most HTML tags may be used</em>"""
+}

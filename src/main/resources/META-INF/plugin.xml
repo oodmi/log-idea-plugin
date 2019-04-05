@@ -1,0 +1,26 @@
+<idea-plugin>
+    <id>oodmi.log-idea-plugin</id>
+    <name>Log helper for java</name>
+    <vendor email="dmitry.o.ovchinnikov@gmail.com" url="http://www.yourcompany.com">Oodmi</vendor>
+
+    <description><![CDATA[
+    Enter short description for your plugin here.<br>
+    <em>most HTML tags may be used</em>
+    ]]></description>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <!-- uncomment to enable plugin in all products
+    <depends>com.intellij.modules.lang</depends>
+    -->
+
+    <depends>com.intellij.modules.lang</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <codeInsight.template.postfixTemplateProvider language="JAVA"
+                                                      implementationClass="org.jetbrains.logger.LogTemplateProvider"/>
+    </extensions>
+
+    <actions>
+    </actions>
+</idea-plugin>
