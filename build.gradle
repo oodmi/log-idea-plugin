@@ -11,7 +11,7 @@ group 'oodmi'
 version '1.0'
 
 intellij {
-    version '2017.3.1'
+    version '2019.1.1'
     plugins 'coverage' //Bundled plugin dependencies
     pluginName 'oodmi.log-idea-plugin'
 }
