@@ -41,4 +41,10 @@ public class LogTemplate extends PostfixTemplate {
         psiElement.replace(logger);
         System.out.println("LogTemplate.expand");
     }
+
+    @Override
+    public void setVariables(@NotNull Template template, @NotNull PsiElement element) {
+        TextExpression index = new TextExpression("LOG");
+        template.addVariable("logger", index, index, true);
+    }
 }
