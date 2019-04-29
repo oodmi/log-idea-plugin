@@ -1,45 +1,28 @@
 package org.jetbrains.logger.template;
 
-import com.intellij.codeInsight.template.postfix.templates.PostfixTemplate;
-import com.intellij.codeInsight.template.postfix.templates.PostfixTemplateExpressionSelector;
-import com.intellij.openapi.editor.Document;
-import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.project.Project;
-import com.intellij.psi.JavaPsiFacade;
+import com.intellij.codeInsight.template.Template;
+import com.intellij.codeInsight.template.impl.TextExpression;
+import com.intellij.codeInsight.template.postfix.templates.StringBasedPostfixTemplate;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiElementFactory;
-import com.intellij.psi.PsiMethodCallExpression;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorTopmost;
 
-public class LogTemplate extends PostfixTemplate {
+public class LogTemplate extends StringBasedPostfixTemplate {
 
-    private final PostfixTemplateExpressionSelector selector;
+    private String templateString;
 
-    protected LogTemplate(@NotNull String name, @NotNull String example) {
-        super(name, example);
-        selector = selectorAllExpressionsWithCurrentOffset(IS_NON_VOID);
+    protected LogTemplate(@NotNull String name, @NotNull String example, @NotNull String templateString) {
+        super(name, example, selectorTopmost(IS_NON_VOID));
+        this.templateString = templateString;
     }
 
+    @Nullable
     @Override
-    public boolean isApplicable(@NotNull PsiElement psiElement, @NotNull Document document, int i) {
-        System.out.println("LogTemplate.isApplicable");
-        boolean b = selector.hasExpression(psiElement, document, i);
-        System.out.println("LogTemplate.isApplicable + " + b);
-        return b;
-    }
-
-    @Override
-    public void expand(@NotNull PsiElement psiElement, @NotNull Editor editor) {
-        Project project = editor.getProject();
-        PsiElementFactory factory = JavaPsiFacade.getInstance(project).getElementFactory();
-        PsiMethodCallExpression logger =
-                (PsiMethodCallExpression) factory.createExpressionFromText(getExample(), null);
-        logger.getArgumentList().getExpressions()[0].replace(psiElement);
-        psiElement.replace(logger);
-        System.out.println("LogTemplate.expand");
+    public String getTemplateString(@NotNull PsiElement element) {
+        return templateString;
     }
 
     @Override
