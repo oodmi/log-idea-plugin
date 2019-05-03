@@ -8,7 +8,7 @@ apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'java'
 
 group 'oodmi'
-version '1.0'
+version '0.0.1'
 
 intellij {
     version '2019.1.1'

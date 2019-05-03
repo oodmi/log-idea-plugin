@@ -1,11 +1,10 @@
 <idea-plugin>
     <id>oodmi.log-idea-plugin</id>
     <name>Log helper for java</name>
-    <vendor email="dmitry.o.ovchinnikov@gmail.com" url="http://www.yourcompany.com">Oodmi</vendor>
+    <vendor email="dmitry.o.ovchinnikov@gmail.com" url="http://www.oodmi.ru">Oodmi</vendor>
 
     <description><![CDATA[
-    Enter short description for your plugin here.<br>
-    <em>most HTML tags may be used</em>
+    This plugin helps you to find suitable logger.<br>
     ]]></description>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
