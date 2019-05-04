@@ -1,7 +1,9 @@
 package org.jetbrains.logger.template;
 
+import org.jetbrains.logger.LogTemplateProvider;
+
 public class LogInfoTemplate extends LogTemplate {
-    public LogInfoTemplate() {
-        super("logi", "logger.info(expr)", "$logger$.info($expr$);$END$");
+    public LogInfoTemplate(LogTemplateProvider logTemplateProvider) {
+        super("logi", "logger.info(expr)", "$logger$.info($expr$);$END$", logTemplateProvider);
     }
 }

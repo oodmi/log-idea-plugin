@@ -20,9 +20,9 @@ public class LogTemplateProvider implements PostfixTemplateProvider {
 
     private final Set<PostfixTemplate> templates = ContainerUtil.newHashSet(
             new PostfixTemplate[]{
-                    new LogInfoTemplate(),
-                    new LogDebugTemplate(),
-                    new LogErrorTemplate()
+                    new LogInfoTemplate(this),
+                    new LogDebugTemplate(this),
+                    new LogErrorTemplate(this)
             });
 
     public LogTemplateProvider() {

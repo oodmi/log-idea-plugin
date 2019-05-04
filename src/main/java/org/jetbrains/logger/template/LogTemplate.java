@@ -10,6 +10,7 @@ import com.intellij.psi.PsiField;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.logger.LogTemplateProvider;
 
 import java.util.Arrays;
 import java.util.List;
@@ -22,8 +23,8 @@ public class LogTemplate extends StringBasedPostfixTemplate {
 
     private String templateString;
 
-    protected LogTemplate(@NotNull String name, @NotNull String example, @NotNull String templateString) {
-        super(name, example, selectorAllExpressionsWithCurrentOffset(IS_NON_VOID));
+    protected LogTemplate(@NotNull String name, @NotNull String example, @NotNull String templateString, LogTemplateProvider logTemplateProvider) {
+        super(name, example, selectorAllExpressionsWithCurrentOffset(IS_NON_VOID), logTemplateProvider);
         this.templateString = templateString;
     }
 
