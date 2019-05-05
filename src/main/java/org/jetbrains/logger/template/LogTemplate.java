@@ -65,7 +65,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
             String qualifiedName = annotation.getQualifiedName();
             System.out.println(qualifiedName);
             if (qualifiedName != null && getLombok().contains(qualifiedName)) {
-                TextExpression log = new TextExpression("log");
+                TextExpression log = new TextExpression(getLombokName());
                 template.addVariable("logger", log, log, true);
                 return;
             }
@@ -88,5 +88,10 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         }
 
         template.addVariable("logger", index, index, true);
+    }
+
+    private String getLombokName() {
+        //TODO: calculate name from lombok.config
+        return "log";
     }
 }
