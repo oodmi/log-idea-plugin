@@ -1,8 +1,13 @@
 package org.jetbrains.logger.template;
 
 import com.intellij.codeInsight.template.Template;
+import com.intellij.codeInsight.template.TemplateManager;
 import com.intellij.codeInsight.template.impl.TextExpression;
+import com.intellij.codeInsight.template.postfix.templates.PostfixTemplatesUtils;
 import com.intellij.codeInsight.template.postfix.templates.StringBasedPostfixTemplate;
+import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
@@ -13,44 +18,45 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.logger.LogTemplateProvider;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
 import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
 import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
+import static org.jetbrains.logger.utils.LogUtils.*;
 
 public class LogTemplate extends StringBasedPostfixTemplate {
 
     private String templateString;
 
-    protected LogTemplate(@NotNull String name, @NotNull String example, @NotNull String templateString, LogTemplateProvider logTemplateProvider) {
+    LogTemplate(@NotNull String name, @NotNull String example, @NotNull String templateString, LogTemplateProvider logTemplateProvider) {
         super(name, example, selectorAllExpressionsWithCurrentOffset(IS_NON_VOID), logTemplateProvider);
         this.templateString = templateString;
-    }
-
-    public static List<String> getLombok() {
-        return Arrays.asList("lombok.extern.apachecommons.CommonsLog",
-                "lombok.extern.java.Log",
-                "lombok.extern.log4j.Log4j",
-                "lombok.extern.log4j.Log4j2",
-                "lombok.extern.slf4j.XSlf4j",
-                "lombok.extern.jbosslog.JBossLog",
-                "lombok.extern.flogger.Flogger",
-                "lombok.extern.slf4j.Slf4j");
-    }
-
-    public static List<String> getLoggers() {
-        return Arrays.asList("log", "logger", "logging", "lgr");
-    }
-
-    public static String getModifier() {
-        return "static";
     }
 
     @Nullable
     @Override
     public String getTemplateString(@NotNull PsiElement element) {
         return templateString;
+    }
+
+    @Override
+    public void expandForChooseExpression(@NotNull PsiElement expr, @NotNull Editor editor) {
+        Project project = expr.getProject();
+        Document document = editor.getDocument();
+        PsiElement elementForRemoving = getElementToRemove(expr);
+        document.deleteString(elementForRemoving.getTextRange().getStartOffset(), elementForRemoving.getTextRange().getEndOffset());
+        TemplateManager manager = TemplateManager.getInstance(project);
+
+        String templateString = getTemplateString(expr);
+        if (templateString == null) {
+            PostfixTemplatesUtils.showErrorHint(expr.getProject(), editor);
+            return;
+        }
+
+        Template template = super.createTemplate(manager, templateString);
+        template.addVariable(EXPR, new TextExpression(expr.getText()), false);
+        setVariables(template, expr);
+        manager.startTemplate(editor, template);
     }
 
     @Override
