@@ -5,6 +5,8 @@ import java.util.List;
 
 public class LogUtils {
 
+    public static final String LOGGER = "logger";
+
     public static List<String> getLombok() {
         return Arrays.asList("lombok.extern.apachecommons.CommonsLog",
                 "lombok.extern.java.Log",

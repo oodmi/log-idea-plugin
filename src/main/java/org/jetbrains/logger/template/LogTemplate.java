@@ -8,10 +8,7 @@ import com.intellij.codeInsight.template.postfix.templates.StringBasedPostfixTem
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.PsiAnnotation;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiField;
+import com.intellij.psi.*;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,44 +33,64 @@ public class LogTemplate extends StringBasedPostfixTemplate {
     @Nullable
     @Override
     public String getTemplateString(@NotNull PsiElement element) {
-        return templateString;
+        PsiElement parent = element.getParent();
+        if (parent instanceof PsiExpressionStatement) {
+            return templateString;
+        } else {
+            return "\n" + templateString;
+        }
     }
 
     @Override
     public void expandForChooseExpression(@NotNull PsiElement expr, @NotNull Editor editor) {
-        Project project = expr.getProject();
-        Document document = editor.getDocument();
-        PsiElement elementForRemoving = getElementToRemove(expr);
-        document.deleteString(elementForRemoving.getTextRange().getStartOffset(), elementForRemoving.getTextRange().getEndOffset());
-        TemplateManager manager = TemplateManager.getInstance(project);
-
-        String templateString = getTemplateString(expr);
-        if (templateString == null) {
+        //check available logger
+        String loggerName = getLoggerName(expr);
+        if (loggerName == null) {
             PostfixTemplatesUtils.showErrorHint(expr.getProject(), editor);
             return;
         }
 
-        Template template = super.createTemplate(manager, templateString);
-        template.addVariable(EXPR, new TextExpression(expr.getText()), false);
+        Project project = expr.getProject();
+        Document document = editor.getDocument();
+
+        //delete ot not current expression
+        PsiElement parent = expr.getParent();
+        if (parent instanceof PsiExpressionStatement) {
+            PsiElement elementForRemoving = getElementToRemove(expr);
+            document.deleteString(elementForRemoving.getTextRange().getStartOffset(), elementForRemoving.getTextRange().getEndOffset());
+        }
+
+        TemplateManager manager = TemplateManager.getInstance(project);
+
+        Template template = super.createTemplate(manager, getTemplateString(expr));
         setVariables(template, expr);
         manager.startTemplate(editor, template);
     }
 
     @Override
     public void setVariables(@NotNull Template template, @NotNull PsiElement element) {
-        TextExpression index = new TextExpression("LOG");
+        String loggerName = getLoggerName(element);
+        TextExpression log = new TextExpression(loggerName);
+        template.addVariable(EXPR, new TextExpression(element.getText()), false);
+        template.addVariable(LOGGER, log, log, true);
+    }
+
+    private String getLombokName() {
+        //TODO: calculate name from lombok.config
+        return "log";
+    }
+
+    private String getLoggerName(@NotNull PsiElement element) {
         PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
         if (Objects.isNull(psiClass)) {
-            return;
+            return null;
         }
         PsiAnnotation[] annotations = psiClass.getAnnotations();
         for (PsiAnnotation annotation : annotations) {
             String qualifiedName = annotation.getQualifiedName();
             System.out.println(qualifiedName);
             if (qualifiedName != null && getLombok().contains(qualifiedName)) {
-                TextExpression log = new TextExpression(getLombokName());
-                template.addVariable("logger", log, log, true);
-                return;
+                return getLombokName();
             }
         }
         PsiField[] allFields = psiClass.getAllFields();
@@ -86,18 +103,15 @@ public class LogTemplate extends StringBasedPostfixTemplate {
                 String clazz = field.getType().getCanonicalText();
                 boolean suitable = getLoggers().stream().anyMatch(it -> clazz.toLowerCase().contains(it));
                 if (suitable) {
-                    TextExpression log = new TextExpression(field.getName());
-                    template.addVariable("logger", log, log, true);
-                    return;
+                    return field.getName();
                 }
             }
         }
-
-        template.addVariable("logger", index, index, true);
+        return null;
     }
 
-    private String getLombokName() {
-        //TODO: calculate name from lombok.config
-        return "log";
+    @Override
+    protected PsiElement getElementToRemove(PsiElement expr) {
+        return super.getElementToRemove(expr);
     }
 }
