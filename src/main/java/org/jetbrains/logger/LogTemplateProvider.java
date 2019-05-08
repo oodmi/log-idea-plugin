@@ -2,10 +2,8 @@ package org.jetbrains.logger;
 
 import com.intellij.codeInsight.completion.CompletionInitializationContext;
 import com.intellij.codeInsight.completion.JavaCompletionContributor;
-import com.intellij.codeInsight.template.postfix.templates.PostfixLiveTemplate;
 import com.intellij.codeInsight.template.postfix.templates.PostfixTemplate;
 import com.intellij.codeInsight.template.postfix.templates.PostfixTemplateProvider;
-import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.containers.ContainerUtil;
@@ -58,16 +56,6 @@ public class LogTemplateProvider implements PostfixTemplateProvider {
     @NotNull
     @Override
     public PsiFile preCheck(@NotNull PsiFile psiFile, @NotNull Editor editor, int i) {
-        System.out.println("LogTemplateProvider.preCheck");
-        Document document = psiFile.getViewProvider().getDocument();
-        assert document != null;
-        CharSequence sequence = document.getCharsSequence();
-        StringBuilder fileContentWithSemicolon = new StringBuilder(sequence);
-        if (isSemicolonNeeded(psiFile, editor)) {
-            fileContentWithSemicolon.insert(i, ';');
-            return PostfixLiveTemplate.copyFile(psiFile, fileContentWithSemicolon);
-        }
-
         return psiFile;
     }
 }

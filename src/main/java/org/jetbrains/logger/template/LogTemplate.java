@@ -1,14 +1,5 @@
 package org.jetbrains.logger.template;
 
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
-import static org.jetbrains.logger.utils.LogUtils.LOGGER;
-import static org.jetbrains.logger.utils.LogUtils.TYPE;
-import static org.jetbrains.logger.utils.LogUtils.VAR;
-import static org.jetbrains.logger.utils.LogUtils.getLoggers;
-import static org.jetbrains.logger.utils.LogUtils.getLombok;
-import static org.jetbrains.logger.utils.LogUtils.getModifier;
-
 import com.intellij.codeInsight.template.Template;
 import com.intellij.codeInsight.template.TemplateManager;
 import com.intellij.codeInsight.template.impl.TextExpression;
@@ -17,13 +8,7 @@ import com.intellij.codeInsight.template.postfix.templates.StringBasedPostfixTem
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.PsiAnnotation;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiExpression;
-import com.intellij.psi.PsiExpressionStatement;
-import com.intellij.psi.PsiField;
-import com.intellij.psi.PsiType;
+import com.intellij.psi.*;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,6 +16,10 @@ import org.jetbrains.logger.LogTemplateProvider;
 
 import java.util.Arrays;
 import java.util.Objects;
+
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
+import static org.jetbrains.logger.utils.LogUtils.*;
 
 public class LogTemplate extends StringBasedPostfixTemplate {
 
@@ -49,8 +38,8 @@ public class LogTemplate extends StringBasedPostfixTemplate {
             return "$" + LOGGER + "$." + level + "($expr$);$END$";
         } else {
             final String text = element.getText();
-            final String parentText = parent.getText();
-            final String endText = parentText.replace(text, "$" + VAR + "$");
+            final String parentText = getParent(element).getText();
+            final String endText = replaceLast(parentText, text, "$" + VAR + "$");
             final String s = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
                     + "$" + LOGGER + "$." + level + "($" + VAR + "$);\n"
                     + endText + "$END$";
@@ -75,7 +64,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         if (parent instanceof PsiExpressionStatement) {
             document.deleteString(expr.getTextRange().getStartOffset(), expr.getTextRange().getEndOffset());
         } else {
-            PsiElement elementForRemoving = expr.getParent();
+            PsiElement elementForRemoving = getParent(expr);
             document.deleteString(elementForRemoving.getTextRange().getStartOffset(), elementForRemoving.getTextRange().getEndOffset());
         }
 
@@ -145,5 +134,21 @@ public class LogTemplate extends StringBasedPostfixTemplate {
             }
         }
         return null;
+    }
+
+    public PsiElement getParent(PsiElement psiElement) {
+        PsiElement parent = psiElement;
+        while (!parent.getText().endsWith(";")) {
+            parent = parent.getParent();
+        }
+        return parent;
+    }
+
+    private String replaceLast(String string, String from, String to) {
+        int lastIndex = string.lastIndexOf(from);
+        if (lastIndex < 0) return string;
+        String substring = string.substring(lastIndex);
+        String tail = substring.replace(from, to);
+        return string.substring(0, lastIndex) + tail;
     }
 }
