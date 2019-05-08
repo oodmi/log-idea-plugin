@@ -3,7 +3,6 @@ package org.jetbrains.logger.template;
 import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
 import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
 import static org.jetbrains.logger.utils.LogUtils.LOGGER;
-import static org.jetbrains.logger.utils.LogUtils.PARENT;
 import static org.jetbrains.logger.utils.LogUtils.TYPE;
 import static org.jetbrains.logger.utils.LogUtils.VAR;
 import static org.jetbrains.logger.utils.LogUtils.getLoggers;
@@ -49,9 +48,12 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         if (parent instanceof PsiExpressionStatement) {
             return "$" + LOGGER + "$." + level + "($expr$);$END$";
         } else {
+            final String text = element.getText();
+            final String parentText = parent.getText();
+            final String endText = parentText.replace(text, "$" + VAR + "$");
             final String s = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
                     + "$" + LOGGER + "$." + level + "($" + VAR + "$);\n"
-                    + "$" + PARENT + "$$END$";
+                    + endText + "$END$";
             return s;
         }
     }
@@ -104,7 +106,6 @@ public class LogTemplate extends StringBasedPostfixTemplate {
             template.addVariable(LOGGER, log, log, true);
 
             template.addVariable(EXPR, new TextExpression(element.getText()), false);
-            template.addVariable(PARENT, new TextExpression(parent.getText()), false);
         } else {
             template.addVariable(EXPR, new TextExpression(element.getText()), false);
             template.addVariable(LOGGER, log, log, true);
