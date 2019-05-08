@@ -1,15 +1,15 @@
 package org.jetbrains.logger.template;
 
-import org.jetbrains.logger.LogTemplateProvider;
-
 import static org.jetbrains.logger.utils.LogUtils.LOGGER;
+
+import org.jetbrains.logger.LogTemplateProvider;
 
 public class LogErrorTemplate extends LogTemplate {
     public LogErrorTemplate(LogTemplateProvider logTemplateProvider) {
         super("loge",
-                LOGGER + ".error(expr)",
-                "$" + LOGGER + "$.error($expr$);$END$",
-                logTemplateProvider);
+              LOGGER + ".error(expr)",
+              "error",
+              logTemplateProvider);
 
     }
 }

@@ -7,6 +7,8 @@ public class LogUtils {
 
     public static final String LOGGER = "logger";
     public static final String PARENT = "parent";
+    public static final String TYPE = "type";
+    public static final String VAR = "var";
 
     private LogUtils() {
 

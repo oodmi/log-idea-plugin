@@ -4,6 +4,8 @@ import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplate
 import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
 import static org.jetbrains.logger.utils.LogUtils.LOGGER;
 import static org.jetbrains.logger.utils.LogUtils.PARENT;
+import static org.jetbrains.logger.utils.LogUtils.TYPE;
+import static org.jetbrains.logger.utils.LogUtils.VAR;
 import static org.jetbrains.logger.utils.LogUtils.getLoggers;
 import static org.jetbrains.logger.utils.LogUtils.getLombok;
 import static org.jetbrains.logger.utils.LogUtils.getModifier;
@@ -19,8 +21,10 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiExpression;
 import com.intellij.psi.PsiExpressionStatement;
 import com.intellij.psi.PsiField;
+import com.intellij.psi.PsiType;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,11 +35,11 @@ import java.util.Objects;
 
 public class LogTemplate extends StringBasedPostfixTemplate {
 
-    private String templateString;
+    private String level;
 
-    LogTemplate(@NotNull String name, @NotNull String example, @NotNull String templateString, LogTemplateProvider logTemplateProvider) {
+    LogTemplate(@NotNull String name, @NotNull String example, @NotNull String level, LogTemplateProvider logTemplateProvider) {
         super(name, example, selectorAllExpressionsWithCurrentOffset(IS_NON_VOID), logTemplateProvider);
-        this.templateString = templateString;
+        this.level = level;
     }
 
     @Nullable
@@ -43,9 +47,12 @@ public class LogTemplate extends StringBasedPostfixTemplate {
     public String getTemplateString(@NotNull PsiElement element) {
         PsiElement parent = element.getParent();
         if (parent instanceof PsiExpressionStatement) {
-            return templateString;
+            return "$" + LOGGER + "$." + level + "($expr$);$END$";
         } else {
-            return templateString + "\n$" + PARENT + "$";
+            final String s = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
+                    + "$" + LOGGER + "$." + level + "($" + VAR + "$);\n"
+                    + "$" + PARENT + "$$END$";
+            return s;
         }
     }
 
@@ -81,11 +88,26 @@ public class LogTemplate extends StringBasedPostfixTemplate {
     public void setVariables(@NotNull Template template, @NotNull PsiElement element) {
         String loggerName = getLoggerName(element);
         TextExpression log = new TextExpression(loggerName);
-        template.addVariable(EXPR, new TextExpression(element.getText()), false);
-        template.addVariable(LOGGER, log, log, true);
         PsiElement parent = element.getParent();
         if (!(parent instanceof PsiExpressionStatement)) {
+
+            PsiExpression psiExpression = (PsiExpression) element;
+            final PsiType type = psiExpression.getType();
+            if (Objects.nonNull(type)) {
+                final TextExpression typeName = new TextExpression(type.getCanonicalText());
+                template.addVariable(TYPE, typeName, typeName, true);
+            }
+
+            final TextExpression varName = new TextExpression("newVar");
+            template.addVariable(VAR, varName, varName, true);
+
+            template.addVariable(LOGGER, log, log, true);
+
+            template.addVariable(EXPR, new TextExpression(element.getText()), false);
             template.addVariable(PARENT, new TextExpression(parent.getText()), false);
+        } else {
+            template.addVariable(EXPR, new TextExpression(element.getText()), false);
+            template.addVariable(LOGGER, log, log, true);
         }
     }
 

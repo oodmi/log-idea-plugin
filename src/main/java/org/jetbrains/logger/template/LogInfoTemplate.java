@@ -8,7 +8,7 @@ public class LogInfoTemplate extends LogTemplate {
     public LogInfoTemplate(LogTemplateProvider logTemplateProvider) {
         super("logi",
                 LOGGER + ".info(expr)",
-                "$" + LOGGER + "$.info($expr$);$END$",
+                "info",
                 logTemplateProvider);
     }
 }
