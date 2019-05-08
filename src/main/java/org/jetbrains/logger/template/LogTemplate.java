@@ -37,8 +37,17 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         if (parent instanceof PsiExpressionStatement) {
             return "$" + LOGGER + "$." + level + "($expr$);$END$";
         } else {
+
+            PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
+            if (Objects.nonNull(parentOfType)) {
+                PsiLocalVariable localVariable = (PsiLocalVariable) element.getParent();
+                final String s = getParentText(element) + "\n"
+                        + "$" + LOGGER + "$." + level + "(" + localVariable.getName() + ");$END$";
+                return s;
+            }
+
             final String text = element.getText();
-            final String parentText = getParent(element).getText();
+            final String parentText = getParentText(element);
             final String endText = replaceLast(parentText, text, "$" + VAR + "$");
             final String s = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
                     + "$" + LOGGER + "$." + level + "($" + VAR + "$);\n"
@@ -142,6 +151,15 @@ public class LogTemplate extends StringBasedPostfixTemplate {
             parent = parent.getParent();
         }
         return parent;
+    }
+
+
+    public String getParentText(PsiElement psiElement) {
+        PsiElement parent = psiElement;
+        while (!parent.getText().endsWith(";")) {
+            parent = parent.getParent();
+        }
+        return parent.getText();
     }
 
     private String replaceLast(String string, String from, String to) {
