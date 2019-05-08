@@ -6,16 +6,21 @@ import java.util.List;
 public class LogUtils {
 
     public static final String LOGGER = "logger";
+    public static final String PARENT = "parent";
+
+    private LogUtils() {
+
+    }
 
     public static List<String> getLombok() {
         return Arrays.asList("lombok.extern.apachecommons.CommonsLog",
-                "lombok.extern.java.Log",
-                "lombok.extern.log4j.Log4j",
-                "lombok.extern.log4j.Log4j2",
-                "lombok.extern.slf4j.XSlf4j",
-                "lombok.extern.jbosslog.JBossLog",
-                "lombok.extern.flogger.Flogger",
-                "lombok.extern.slf4j.Slf4j");
+                             "lombok.extern.java.Log",
+                             "lombok.extern.log4j.Log4j",
+                             "lombok.extern.log4j.Log4j2",
+                             "lombok.extern.slf4j.XSlf4j",
+                             "lombok.extern.jbosslog.JBossLog",
+                             "lombok.extern.flogger.Flogger",
+                             "lombok.extern.slf4j.Slf4j");
     }
 
     public static List<String> getLoggers() {

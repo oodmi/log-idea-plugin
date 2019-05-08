@@ -1,5 +1,13 @@
 package org.jetbrains.logger.template;
 
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
+import static org.jetbrains.logger.utils.LogUtils.LOGGER;
+import static org.jetbrains.logger.utils.LogUtils.PARENT;
+import static org.jetbrains.logger.utils.LogUtils.getLoggers;
+import static org.jetbrains.logger.utils.LogUtils.getLombok;
+import static org.jetbrains.logger.utils.LogUtils.getModifier;
+
 import com.intellij.codeInsight.template.Template;
 import com.intellij.codeInsight.template.TemplateManager;
 import com.intellij.codeInsight.template.impl.TextExpression;
@@ -8,7 +16,11 @@ import com.intellij.codeInsight.template.postfix.templates.StringBasedPostfixTem
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.*;
+import com.intellij.psi.PsiAnnotation;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiExpressionStatement;
+import com.intellij.psi.PsiField;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,10 +28,6 @@ import org.jetbrains.logger.LogTemplateProvider;
 
 import java.util.Arrays;
 import java.util.Objects;
-
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
-import static org.jetbrains.logger.utils.LogUtils.*;
 
 public class LogTemplate extends StringBasedPostfixTemplate {
 
@@ -37,7 +45,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         if (parent instanceof PsiExpressionStatement) {
             return templateString;
         } else {
-            return "\n" + templateString;
+            return templateString + "\n$" + PARENT + "$";
         }
     }
 
@@ -56,7 +64,9 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         //delete ot not current expression
         PsiElement parent = expr.getParent();
         if (parent instanceof PsiExpressionStatement) {
-            PsiElement elementForRemoving = getElementToRemove(expr);
+            document.deleteString(expr.getTextRange().getStartOffset(), expr.getTextRange().getEndOffset());
+        } else {
+            PsiElement elementForRemoving = expr.getParent();
             document.deleteString(elementForRemoving.getTextRange().getStartOffset(), elementForRemoving.getTextRange().getEndOffset());
         }
 
@@ -73,6 +83,10 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         TextExpression log = new TextExpression(loggerName);
         template.addVariable(EXPR, new TextExpression(element.getText()), false);
         template.addVariable(LOGGER, log, log, true);
+        PsiElement parent = element.getParent();
+        if (!(parent instanceof PsiExpressionStatement)) {
+            template.addVariable(PARENT, new TextExpression(parent.getText()), false);
+        }
     }
 
     private String getLombokName() {
@@ -108,10 +122,5 @@ public class LogTemplate extends StringBasedPostfixTemplate {
             }
         }
         return null;
-    }
-
-    @Override
-    protected PsiElement getElementToRemove(PsiElement expr) {
-        return super.getElementToRemove(expr);
     }
 }
