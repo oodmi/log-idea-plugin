@@ -9,6 +9,7 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
+import com.intellij.psi.impl.source.PsiClassReferenceType;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,26 +35,31 @@ public class LogTemplate extends StringBasedPostfixTemplate {
     @Override
     public String getTemplateString(@NotNull PsiElement element) {
         PsiElement parent = element.getParent();
+        boolean primitive = isPrimitive(element);
         if (parent instanceof PsiExpressionStatement) {
-            return "$" + LOGGER + "$." + level + "($expr$);$END$";
-        } else {
-
-            PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
-            if (Objects.nonNull(parentOfType)) {
-                PsiLocalVariable localVariable = (PsiLocalVariable) element.getParent();
-                final String s = getParentText(element) + "\n"
-                        + "$" + LOGGER + "$." + level + "(" + localVariable.getName() + ");$END$";
-                return s;
-            }
-
-            final String text = element.getText();
-            final String parentText = getParentText(element);
-            final String endText = replaceLast(parentText, text, "$" + VAR + "$");
-            final String s = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
-                    + "$" + LOGGER + "$." + level + "($" + VAR + "$);\n"
-                    + endText + "$END$";
-            return s;
+            return "$" + LOGGER + "$." + level + "("
+                    + (primitive ? "\"\" + " : "")
+                    + "$" + EXPR + "$);$END$";
         }
+        PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
+        if (Objects.nonNull(parentOfType)) {
+            PsiLocalVariable localVariable = (PsiLocalVariable) element.getParent();
+            final String template = element.getContext().getText() + "\n"
+                    + "$" + LOGGER + "$." + level + "("
+                    + (primitive ? "\"\" + " : "")
+                    + localVariable.getName() + ");$END$";
+            return template;
+        }
+
+        final String endText = replaceLast(element.getContext().getText(),
+                element.getText(),
+                "$" + VAR + "$");
+        final String template = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
+                + "$" + LOGGER + "$." + level + "("
+                + (primitive ? "\"\" + " : "")
+                + "$" + VAR + "$);\n"
+                + endText + "$END$";
+        return template;
     }
 
     @Override
@@ -73,7 +79,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         if (parent instanceof PsiExpressionStatement) {
             document.deleteString(expr.getTextRange().getStartOffset(), expr.getTextRange().getEndOffset());
         } else {
-            PsiElement elementForRemoving = getParent(expr);
+            PsiElement elementForRemoving = expr.getContext();
             document.deleteString(elementForRemoving.getTextRange().getStartOffset(), elementForRemoving.getTextRange().getEndOffset());
         }
 
@@ -90,6 +96,12 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         TextExpression log = new TextExpression(loggerName);
         PsiElement parent = element.getParent();
         if (!(parent instanceof PsiExpressionStatement)) {
+
+            PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
+            if (Objects.nonNull(parentOfType)) {
+                template.addVariable(LOGGER, log, log, true);
+                return;
+            }
 
             PsiExpression psiExpression = (PsiExpression) element;
             final PsiType type = psiExpression.getType();
@@ -153,15 +165,6 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         return parent;
     }
 
-
-    public String getParentText(PsiElement psiElement) {
-        PsiElement parent = psiElement;
-        while (!parent.getText().endsWith(";")) {
-            parent = parent.getParent();
-        }
-        return parent.getText();
-    }
-
     private String replaceLast(String string, String from, String to) {
         int lastIndex = string.lastIndexOf(from);
         if (lastIndex < 0) return string;
@@ -169,4 +172,16 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         String tail = substring.replace(from, to);
         return string.substring(0, lastIndex) + tail;
     }
+
+    private boolean isPrimitive(PsiElement element) {
+        PsiExpression expression = (PsiExpression) element;
+        final PsiType type = expression.getType();
+        if (type instanceof PsiPrimitiveType) {
+            return true;
+        }
+        String className = ((PsiClassReferenceType) type).getClassName();
+        boolean isPrivitive = getPrimitives().contains(className);
+        return isPrivitive;
+    }
+
 }
