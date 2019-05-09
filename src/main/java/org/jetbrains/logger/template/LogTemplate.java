@@ -25,9 +25,44 @@ public class LogTemplate extends StringBasedPostfixTemplate {
 
     private String level;
 
-    LogTemplate(@NotNull String name, @NotNull String example, @NotNull String level, LogTemplateProvider logTemplateProvider) {
+    public LogTemplate(@NotNull String name, @NotNull String example, @NotNull String level, LogTemplateProvider logTemplateProvider) {
         super(name, example, selectorAllExpressionsWithCurrentOffset(IS_NON_VOID), logTemplateProvider);
         this.level = level;
+    }
+
+    private static String getLoggerName(@NotNull PsiElement element) {
+        PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
+        if (Objects.isNull(psiClass)) {
+            return null;
+        }
+        PsiAnnotation[] annotations = psiClass.getAnnotations();
+        for (PsiAnnotation annotation : annotations) {
+            String qualifiedName = annotation.getQualifiedName();
+            System.out.println(qualifiedName);
+            if (qualifiedName != null && getLombok().contains(qualifiedName)) {
+                return getLombokName();
+            }
+        }
+        PsiField[] allFields = psiClass.getAllFields();
+        for (PsiField field : allFields) {
+            boolean flag = Arrays.stream(field.getModifiers()).anyMatch(it -> {
+                System.out.println(it.name());
+                return getModifier().equalsIgnoreCase(it.name());
+            });
+            if (flag) {
+                String clazz = field.getType().getCanonicalText();
+                boolean suitable = getLoggers().stream().anyMatch(it -> clazz.toLowerCase().contains(it));
+                if (suitable) {
+                    return field.getName();
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String getLombokName() {
+        //TODO: calculate name from lombok.config
+        return "log";
     }
 
     @Nullable
@@ -119,40 +154,5 @@ public class LogTemplate extends StringBasedPostfixTemplate {
             template.addVariable(EXPR, new TextExpression(element.getText()), false);
             template.addVariable(LOGGER, log, log, true);
         }
-    }
-
-    private String getLombokName() {
-        //TODO: calculate name from lombok.config
-        return "log";
-    }
-
-    private String getLoggerName(@NotNull PsiElement element) {
-        PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
-        if (Objects.isNull(psiClass)) {
-            return null;
-        }
-        PsiAnnotation[] annotations = psiClass.getAnnotations();
-        for (PsiAnnotation annotation : annotations) {
-            String qualifiedName = annotation.getQualifiedName();
-            System.out.println(qualifiedName);
-            if (qualifiedName != null && getLombok().contains(qualifiedName)) {
-                return getLombokName();
-            }
-        }
-        PsiField[] allFields = psiClass.getAllFields();
-        for (PsiField field : allFields) {
-            boolean flag = Arrays.stream(field.getModifiers()).anyMatch(it -> {
-                System.out.println(it.name());
-                return getModifier().equalsIgnoreCase(it.name());
-            });
-            if (flag) {
-                String clazz = field.getType().getCanonicalText();
-                boolean suitable = getLoggers().stream().anyMatch(it -> clazz.toLowerCase().contains(it));
-                if (suitable) {
-                    return field.getName();
-                }
-            }
-        }
-        return null;
     }
 }
