@@ -1,16 +1,12 @@
 package org.jetbrains.logger;
 
-import com.intellij.codeInsight.completion.CompletionInitializationContext;
-import com.intellij.codeInsight.completion.JavaCompletionContributor;
 import com.intellij.codeInsight.template.postfix.templates.PostfixTemplate;
 import com.intellij.codeInsight.template.postfix.templates.PostfixTemplateProvider;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.logger.template.LogDebugTemplate;
-import org.jetbrains.logger.template.LogErrorTemplate;
-import org.jetbrains.logger.template.LogInfoTemplate;
+import org.jetbrains.logger.template.*;
 
 import java.util.Set;
 
@@ -20,15 +16,13 @@ public class LogTemplateProvider implements PostfixTemplateProvider {
             new PostfixTemplate[]{
                     new LogInfoTemplate(this),
                     new LogDebugTemplate(this),
-                    new LogErrorTemplate(this)
+                    new LogErrorTemplate(this),
+                    new LogTraceTemplate(this),
+                    new LogWarnTemplate(this)
             });
 
     public LogTemplateProvider() {
         System.out.println("LogTemplateProvider.LogTemplateProvider");
-    }
-
-    private static boolean isSemicolonNeeded(@NotNull PsiFile file, @NotNull Editor editor) {
-        return JavaCompletionContributor.semicolonNeeded(editor, file, CompletionInitializationContext.calcStartOffset(editor.getCaretModel().getCurrentCaret()));
     }
 
     @NotNull

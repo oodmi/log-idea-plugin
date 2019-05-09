@@ -9,7 +9,6 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
-import com.intellij.psi.impl.source.PsiClassReferenceType;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -156,32 +155,4 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         }
         return null;
     }
-
-    public PsiElement getParent(PsiElement psiElement) {
-        PsiElement parent = psiElement;
-        while (!parent.getText().endsWith(";")) {
-            parent = parent.getParent();
-        }
-        return parent;
-    }
-
-    private String replaceLast(String string, String from, String to) {
-        int lastIndex = string.lastIndexOf(from);
-        if (lastIndex < 0) return string;
-        String substring = string.substring(lastIndex);
-        String tail = substring.replace(from, to);
-        return string.substring(0, lastIndex) + tail;
-    }
-
-    private boolean isPrimitive(PsiElement element) {
-        PsiExpression expression = (PsiExpression) element;
-        final PsiType type = expression.getType();
-        if (type instanceof PsiPrimitiveType) {
-            return true;
-        }
-        String className = ((PsiClassReferenceType) type).getClassName();
-        boolean isPrivitive = getPrimitives().contains(className);
-        return isPrivitive;
-    }
-
 }

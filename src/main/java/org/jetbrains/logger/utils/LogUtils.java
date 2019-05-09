@@ -1,5 +1,11 @@
 package org.jetbrains.logger.utils;
 
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiExpression;
+import com.intellij.psi.PsiPrimitiveType;
+import com.intellij.psi.PsiType;
+import com.intellij.psi.impl.source.PsiClassReferenceType;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -41,5 +47,24 @@ public class LogUtils {
 
     public static String getModifier() {
         return "static";
+    }
+
+    public static String replaceLast(String string, String from, String to) {
+        int lastIndex = string.lastIndexOf(from);
+        if (lastIndex < 0) return string;
+        String substring = string.substring(lastIndex);
+        String tail = substring.replace(from, to);
+        return string.substring(0, lastIndex) + tail;
+    }
+
+    public static boolean isPrimitive(PsiElement element) {
+        PsiExpression expression = (PsiExpression) element;
+        final PsiType type = expression.getType();
+        if (type instanceof PsiPrimitiveType) {
+            return true;
+        }
+        String className = ((PsiClassReferenceType) type).getClassName();
+        boolean isPrimitive = getPrimitives().contains(className);
+        return isPrimitive;
     }
 }
