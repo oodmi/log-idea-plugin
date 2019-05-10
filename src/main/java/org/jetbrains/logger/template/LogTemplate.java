@@ -74,12 +74,14 @@ public class LogTemplate extends StringBasedPostfixTemplate {
 
         PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
         if (Objects.nonNull(parentOfType)) {
-            PsiLocalVariable localVariable = (PsiLocalVariable) element.getParent();
-            final String template = element.getContext().getText() + "\n"
-                    + "$" + LOGGER + "$." + level + "("
-                    + (needBraces ? "\"\" + " : "")
-                    + localVariable.getName() + ");$END$";
-            return template;
+            if (parent instanceof PsiLocalVariable) {
+                PsiLocalVariable localVariable = (PsiLocalVariable) parent;
+                final String template = element.getContext().getText() + "\n"
+                        + "$" + LOGGER + "$." + level + "("
+                        + (needBraces ? "\"\" + " : "")
+                        + localVariable.getName() + ");$END$";
+                return template;
+            }
         }
 
         if (element instanceof PsiReferenceExpression) {
@@ -90,7 +92,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
                     + "$END$";
         }
 
-        final String endText = replaceLast(element.getContext().getText(),
+        final String endText = replaceLast(getParent(element).getText(),
                 element.getText(),
                 "$" + VAR + "$");
         final String template = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
@@ -136,17 +138,18 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         PsiElement parent = element.getParent();
         if (!(parent instanceof PsiExpressionStatement)) {
 
-            PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
-            if (Objects.nonNull(parentOfType)) {
-                template.addVariable(LOGGER, log, log, true);
-                return;
-            }
             // use local variable. i.e:
             // int i = 1; method1(method2(i.logi));
             // -> log.info("" + i); method1(method2(i));
             if (element instanceof PsiReferenceExpression) {
                 template.addVariable(LOGGER, log, log, true);
                 template.addVariable(EXPR, new TextExpression(element.getText()), false);
+                return;
+            }
+
+            PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
+            if (Objects.nonNull(parentOfType)) {
+                template.addVariable(LOGGER, log, log, true);
                 return;
             }
 
@@ -168,5 +171,4 @@ public class LogTemplate extends StringBasedPostfixTemplate {
             template.addVariable(LOGGER, log, log, true);
         }
     }
-
 }
