@@ -60,29 +60,34 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         return null;
     }
 
-    private static String getLombokName() {
-        //TODO: calculate name from lombok.config
-        return "log";
-    }
 
     @Nullable
     @Override
     public String getTemplateString(@NotNull PsiElement element) {
         PsiElement parent = element.getParent();
-        boolean primitive = isPrimitive(element);
+        boolean needBraces = isNeedBraces(element);
         if (parent instanceof PsiExpressionStatement) {
             return "$" + LOGGER + "$." + level + "("
-                    + (primitive ? "\"\" + " : "")
+                    + (needBraces ? "\"\" + " : "")
                     + "$" + EXPR + "$);$END$";
         }
+
         PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
         if (Objects.nonNull(parentOfType)) {
             PsiLocalVariable localVariable = (PsiLocalVariable) element.getParent();
             final String template = element.getContext().getText() + "\n"
                     + "$" + LOGGER + "$." + level + "("
-                    + (primitive ? "\"\" + " : "")
+                    + (needBraces ? "\"\" + " : "")
                     + localVariable.getName() + ");$END$";
             return template;
+        }
+
+        if (element instanceof PsiReferenceExpression) {
+            return "$" + LOGGER + "$." + level + "("
+                    + (needBraces ? "\"\" + " : "")
+                    + "$" + EXPR + "$);\n"
+                    + getParent(element).getText()
+                    + "$END$";
         }
 
         final String endText = replaceLast(element.getContext().getText(),
@@ -90,7 +95,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
                 "$" + VAR + "$");
         final String template = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
                 + "$" + LOGGER + "$." + level + "("
-                + (primitive ? "\"\" + " : "")
+                + (needBraces ? "\"\" + " : "")
                 + "$" + VAR + "$);\n"
                 + endText + "$END$";
         return template;
@@ -113,7 +118,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         if (parent instanceof PsiExpressionStatement) {
             document.deleteString(expr.getTextRange().getStartOffset(), expr.getTextRange().getEndOffset());
         } else {
-            PsiElement elementForRemoving = expr.getContext();
+            PsiElement elementForRemoving = getParent(expr);
             document.deleteString(elementForRemoving.getTextRange().getStartOffset(), elementForRemoving.getTextRange().getEndOffset());
         }
 
@@ -136,6 +141,14 @@ public class LogTemplate extends StringBasedPostfixTemplate {
                 template.addVariable(LOGGER, log, log, true);
                 return;
             }
+            // use local variable. i.e:
+            // int i = 1; method1(method2(i.logi));
+            // -> log.info("" + i); method1(method2(i));
+            if (element instanceof PsiReferenceExpression) {
+                template.addVariable(LOGGER, log, log, true);
+                template.addVariable(EXPR, new TextExpression(element.getText()), false);
+                return;
+            }
 
             PsiExpression psiExpression = (PsiExpression) element;
             final PsiType type = psiExpression.getType();
@@ -155,4 +168,5 @@ public class LogTemplate extends StringBasedPostfixTemplate {
             template.addVariable(LOGGER, log, log, true);
         }
     }
+
 }

@@ -63,8 +63,40 @@ public class LogUtils {
         if (type instanceof PsiPrimitiveType) {
             return true;
         }
-        String className = ((PsiClassReferenceType) type).getClassName();
-        boolean isPrimitive = getPrimitives().contains(className);
-        return isPrimitive;
+        try {
+            String className = ((PsiClassReferenceType) type).getClassName();
+            boolean isPrimitive = getPrimitives().contains(className);
+            return isPrimitive;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static boolean isNeedBraces(PsiElement element) {
+        PsiExpression expression = (PsiExpression) element;
+        final PsiType type = expression.getType();
+        if (type instanceof PsiPrimitiveType) {
+            return true;
+        }
+        try {
+            String className = ((PsiClassReferenceType) type).getClassName();
+            boolean need = !"String".equals(className);
+            return need;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    public static String getLombokName() {
+        //TODO: calculate name from lombok.config
+        return "log";
+    }
+
+    public static PsiElement getParent(PsiElement psiElement) {
+        PsiElement parent = psiElement;
+        while (!parent.getText().endsWith(";")) {
+            parent = parent.getParent();
+        }
+        return parent;
     }
 }
