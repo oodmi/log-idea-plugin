@@ -8,7 +8,7 @@ apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'java'
 
 group 'oodmi'
-version '0.0.2'
+version '0.0.3'
 
 intellij {
     version '2019.1.1'
@@ -17,6 +17,6 @@ intellij {
 }
 patchPluginXml {
     changeNotes """
-      Add functionality for warn, info, debug, error, trace level of suitable logger.<br>
+      Add a support for local variables and arguments.<br>
       </em>"""
 }
