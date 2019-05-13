@@ -1,5 +1,18 @@
 package org.jetbrains.logger.template;
 
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
+import static org.jetbrains.logger.utils.LogUtils.LOGGER;
+import static org.jetbrains.logger.utils.LogUtils.TYPE;
+import static org.jetbrains.logger.utils.LogUtils.VAR;
+import static org.jetbrains.logger.utils.LogUtils.getLoggers;
+import static org.jetbrains.logger.utils.LogUtils.getLombok;
+import static org.jetbrains.logger.utils.LogUtils.getLombokName;
+import static org.jetbrains.logger.utils.LogUtils.getModifier;
+import static org.jetbrains.logger.utils.LogUtils.getParent;
+import static org.jetbrains.logger.utils.LogUtils.isNeedBraces;
+import static org.jetbrains.logger.utils.LogUtils.replaceLast;
+
 import com.intellij.codeInsight.template.Template;
 import com.intellij.codeInsight.template.TemplateManager;
 import com.intellij.codeInsight.template.impl.TextExpression;
@@ -8,7 +21,17 @@ import com.intellij.codeInsight.template.postfix.templates.StringBasedPostfixTem
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.*;
+import com.intellij.psi.PsiAnnotation;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiDeclarationStatement;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiExpression;
+import com.intellij.psi.PsiExpressionStatement;
+import com.intellij.psi.PsiField;
+import com.intellij.psi.PsiLocalVariable;
+import com.intellij.psi.PsiMethodCallExpression;
+import com.intellij.psi.PsiReferenceExpression;
+import com.intellij.psi.PsiType;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,10 +39,6 @@ import org.jetbrains.logger.LogTemplateProvider;
 
 import java.util.Arrays;
 import java.util.Objects;
-
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
-import static org.jetbrains.logger.utils.LogUtils.*;
 
 public class LogTemplate extends StringBasedPostfixTemplate {
 
@@ -93,8 +112,8 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         }
 
         final String endText = replaceLast(getParent(element).getText(),
-                element.getText(),
-                "$" + VAR + "$");
+                                           element.getText(),
+                                           "$" + VAR + "$");
         final String template = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
                 + "$" + LOGGER + "$." + level + "("
                 + (needBraces ? "\"\" + " : "")
@@ -138,35 +157,64 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         PsiElement parent = element.getParent();
         if (!(parent instanceof PsiExpressionStatement)) {
 
-            // use local variable. i.e:
-            // int i = 1; method1(method2(i.logi));
-            // -> log.info("" + i); method1(method2(i));
+            /*
+             use local variable. i.e:
+                int i = 1; method1(method2(i.logi));
+            ->  log.info("" + i);
+                method1(method2(i));
+            */
             if (element instanceof PsiReferenceExpression) {
                 template.addVariable(LOGGER, log, log, true);
                 template.addVariable(EXPR, new TextExpression(element.getText()), false);
                 return;
             }
 
+            /*
+             use local variable. i.e:
+               int i = 1.logi;
+            -> int i = 1;
+               log.info("" + i);
+            */
             PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
             if (Objects.nonNull(parentOfType)) {
+                // if element is PsiMethodCallExpression, we'll need to use creation of variable
+                // otherwise just use local variable
+                if (!(element instanceof PsiMethodCallExpression)) {
+                    template.addVariable(LOGGER, log, log, true);
+                    return;
+                }
+            }
+
+            /*
+                this block creates variable. i.e.:
+                int i = 1;
+                method1(method2(i).logi);
+             -> int i = 1;
+                var s = method2(i);
+                log.info("" + s);
+                method1(s)'
+             */
+            {
+                PsiExpression psiExpression = (PsiExpression) element;
+                final PsiType type = psiExpression.getType();
+                if (Objects.nonNull(type)) {
+                    final TextExpression typeName = new TextExpression(type.getCanonicalText());
+                    template.addVariable(TYPE, typeName, typeName, true);
+                }
+
+                final TextExpression varName = new TextExpression("newVar");
+                template.addVariable(VAR, varName, varName, true);
+
                 template.addVariable(LOGGER, log, log, true);
-                return;
+
+                template.addVariable(EXPR, new TextExpression(element.getText()), false);
             }
-
-            PsiExpression psiExpression = (PsiExpression) element;
-            final PsiType type = psiExpression.getType();
-            if (Objects.nonNull(type)) {
-                final TextExpression typeName = new TextExpression(type.getCanonicalText());
-                template.addVariable(TYPE, typeName, typeName, true);
-            }
-
-            final TextExpression varName = new TextExpression("newVar");
-            template.addVariable(VAR, varName, varName, true);
-
-            template.addVariable(LOGGER, log, log, true);
-
-            template.addVariable(EXPR, new TextExpression(element.getText()), false);
         } else {
+            /*
+                this block just use expression. i.e:
+                "something".logi
+             -> log.info("something");
+             */
             template.addVariable(EXPR, new TextExpression(element.getText()), false);
             template.addVariable(LOGGER, log, log, true);
         }
