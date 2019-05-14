@@ -1,18 +1,5 @@
 package org.jetbrains.logger.template;
 
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
-import static org.jetbrains.logger.utils.LogUtils.LOGGER;
-import static org.jetbrains.logger.utils.LogUtils.TYPE;
-import static org.jetbrains.logger.utils.LogUtils.VAR;
-import static org.jetbrains.logger.utils.LogUtils.getLoggers;
-import static org.jetbrains.logger.utils.LogUtils.getLombok;
-import static org.jetbrains.logger.utils.LogUtils.getLombokName;
-import static org.jetbrains.logger.utils.LogUtils.getModifier;
-import static org.jetbrains.logger.utils.LogUtils.getParent;
-import static org.jetbrains.logger.utils.LogUtils.isNeedBraces;
-import static org.jetbrains.logger.utils.LogUtils.replaceLast;
-
 import com.intellij.codeInsight.template.Template;
 import com.intellij.codeInsight.template.TemplateManager;
 import com.intellij.codeInsight.template.impl.TextExpression;
@@ -21,16 +8,13 @@ import com.intellij.codeInsight.template.postfix.templates.StringBasedPostfixTem
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiAssignmentExpression;
 import com.intellij.psi.PsiBinaryExpression;
-import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiDeclarationStatement;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiExpression;
 import com.intellij.psi.PsiExpressionList;
 import com.intellij.psi.PsiExpressionStatement;
-import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiLocalVariable;
 import com.intellij.psi.PsiNewExpression;
 import com.intellij.psi.PsiReferenceExpression;
@@ -40,8 +24,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.logger.LogTemplateProvider;
 
-import java.util.Arrays;
 import java.util.Objects;
+
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
+import static org.jetbrains.logger.utils.LogUtils.LOGGER;
+import static org.jetbrains.logger.utils.LogUtils.TYPE;
+import static org.jetbrains.logger.utils.LogUtils.VAR;
+import static org.jetbrains.logger.utils.LogUtils.getLoggerName;
+import static org.jetbrains.logger.utils.LogUtils.getParent;
+import static org.jetbrains.logger.utils.LogUtils.isNeedBraces;
+import static org.jetbrains.logger.utils.LogUtils.replaceLast;
 
 public class LogTemplate extends StringBasedPostfixTemplate {
 
@@ -51,37 +44,6 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         super(name, example, selectorAllExpressionsWithCurrentOffset(IS_NON_VOID), logTemplateProvider);
         this.level = level;
     }
-
-    private static String getLoggerName(@NotNull PsiElement element) {
-        PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
-        if (Objects.isNull(psiClass)) {
-            return null;
-        }
-        PsiAnnotation[] annotations = psiClass.getAnnotations();
-        for (PsiAnnotation annotation : annotations) {
-            String qualifiedName = annotation.getQualifiedName();
-            System.out.println(qualifiedName);
-            if (qualifiedName != null && getLombok().contains(qualifiedName)) {
-                return getLombokName();
-            }
-        }
-        PsiField[] allFields = psiClass.getAllFields();
-        for (PsiField field : allFields) {
-            boolean flag = Arrays.stream(field.getModifiers()).anyMatch(it -> {
-                System.out.println(it.name());
-                return getModifier().equalsIgnoreCase(it.name());
-            });
-            if (flag) {
-                String clazz = field.getType().getCanonicalText();
-                boolean suitable = getLoggers().stream().anyMatch(it -> clazz.toLowerCase().contains(it));
-                if (suitable) {
-                    return field.getName();
-                }
-            }
-        }
-        return null;
-    }
-
 
     @Nullable
     @Override

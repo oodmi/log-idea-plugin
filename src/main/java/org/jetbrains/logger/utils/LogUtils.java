@@ -1,13 +1,19 @@
 package org.jetbrains.logger.utils;
 
+import com.intellij.psi.PsiAnnotation;
+import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiExpression;
+import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiPrimitiveType;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.impl.source.PsiClassReferenceType;
+import com.intellij.psi.util.PsiTreeUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class LogUtils {
 
@@ -22,12 +28,12 @@ public class LogUtils {
 
     public static List<String> getPrimitives() {
         return Arrays.asList("Boolean",
-                "Double",
-                "Float",
-                "Integer",
-                "Short",
-                "Byte",
-                "Character");
+                             "Double",
+                             "Float",
+                             "Integer",
+                             "Short",
+                             "Byte",
+                             "Character");
     }
 
     public static List<String> getLombok() {
@@ -100,4 +106,35 @@ public class LogUtils {
         }
         return parent;
     }
+
+    public static String getLoggerName(@NotNull PsiElement element) {
+        PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
+        if (Objects.isNull(psiClass)) {
+            return null;
+        }
+        PsiAnnotation[] annotations = psiClass.getAnnotations();
+        for (PsiAnnotation annotation : annotations) {
+            String qualifiedName = annotation.getQualifiedName();
+            System.out.println(qualifiedName);
+            if (qualifiedName != null && getLombok().contains(qualifiedName)) {
+                return getLombokName();
+            }
+        }
+        PsiField[] allFields = psiClass.getAllFields();
+        for (PsiField field : allFields) {
+            boolean flag = Arrays.stream(field.getModifiers()).anyMatch(it -> {
+                System.out.println(it.name());
+                return getModifier().equalsIgnoreCase(it.name());
+            });
+            if (flag) {
+                String clazz = field.getType().getCanonicalText();
+                boolean suitable = getLoggers().stream().anyMatch(it -> clazz.toLowerCase().contains(it));
+                if (suitable) {
+                    return field.getName();
+                }
+            }
+        }
+        return null;
+    }
+
 }

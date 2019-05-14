@@ -6,7 +6,11 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.logger.template.impl.*;
+import org.jetbrains.logger.template.impl.LogDebugTemplate;
+import org.jetbrains.logger.template.impl.LogErrorTemplate;
+import org.jetbrains.logger.template.impl.LogInfoTemplate;
+import org.jetbrains.logger.template.impl.LogTraceTemplate;
+import org.jetbrains.logger.template.impl.LogWarnTemplate;
 
 import java.util.Set;
 
