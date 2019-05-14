@@ -6,6 +6,7 @@ abstract public class LoggerTestCase extends LightCodeInsightFixtureTestCase {
     protected void doTest() {
         myFixture.configureByFile(getTestName(false) + ".java");
         myFixture.type('\t');
+        myFixture.completeBasic();
         myFixture.checkResultByFile(getTestName(false) + "_after.java", true);
     }
 }

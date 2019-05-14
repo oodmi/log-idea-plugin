@@ -22,14 +22,17 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiAnnotation;
+import com.intellij.psi.PsiAssignmentExpression;
+import com.intellij.psi.PsiBinaryExpression;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiDeclarationStatement;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiExpression;
+import com.intellij.psi.PsiExpressionList;
 import com.intellij.psi.PsiExpressionStatement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiLocalVariable;
-import com.intellij.psi.PsiMethodCallExpression;
+import com.intellij.psi.PsiNewExpression;
 import com.intellij.psi.PsiReferenceExpression;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.util.PsiTreeUtil;
@@ -94,13 +97,22 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
         if (Objects.nonNull(parentOfType)) {
             if (parent instanceof PsiLocalVariable) {
-                PsiLocalVariable localVariable = (PsiLocalVariable) parent;
-                final String template = element.getContext().getText() + "\n"
+                String localVariable = ((PsiLocalVariable) parent).getName();
+                final String template = getParent(element).getText() + "\n"
                         + "$" + LOGGER + "$." + level + "("
                         + (needBraces ? "\"\" + " : "")
-                        + localVariable.getName() + ");$END$";
+                        + localVariable + ");$END$";
                 return template;
             }
+        }
+
+        if (parent instanceof PsiAssignmentExpression) {
+            final String localVariable = ((PsiAssignmentExpression) parent).getLExpression().getText();
+            final String template = getParent(element).getText() + "\n"
+                    + "$" + LOGGER + "$." + level + "("
+                    + (needBraces ? "\"\" + " : "")
+                    + localVariable + ");$END$";
+            return template;
         }
 
         if (element instanceof PsiReferenceExpression) {
@@ -137,7 +149,11 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         //delete ot not current expression
         PsiElement parent = expr.getParent();
         if (parent instanceof PsiExpressionStatement) {
-            document.deleteString(expr.getTextRange().getStartOffset(), expr.getTextRange().getEndOffset());
+            if (parent.getText().endsWith(";")) {
+                document.deleteString(parent.getTextRange().getStartOffset(), parent.getTextRange().getEndOffset());
+            } else {
+                document.deleteString(expr.getTextRange().getStartOffset(), expr.getTextRange().getEndOffset());
+            }
         } else {
             PsiElement elementForRemoving = getParent(expr);
             document.deleteString(elementForRemoving.getTextRange().getStartOffset(), elementForRemoving.getTextRange().getEndOffset());
@@ -176,12 +192,17 @@ public class LogTemplate extends StringBasedPostfixTemplate {
                log.info("" + i);
             */
             PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
-            if (Objects.nonNull(parentOfType)) {
-                // if element is PsiMethodCallExpression, we'll need to use creation of variable
+            if (parent instanceof PsiAssignmentExpression || Objects.nonNull(parentOfType)) {
+                // if element is PsiBinaryExpression or PsiNewExpression, we'll need to use creation of variable
+                //if parent is PsiExpressionList, we'll need to use creation of variable
                 // otherwise just use local variable
-                if (!(element instanceof PsiMethodCallExpression)) {
+                if (!(element instanceof PsiBinaryExpression)
+                        && !(element instanceof PsiNewExpression)
+                        && !(parent instanceof PsiExpressionList)) {
+                    //                if (!(element instanceof PsiMethodCallExpression)) {
                     template.addVariable(LOGGER, log, log, true);
                     return;
+//                }
                 }
             }
 
@@ -198,6 +219,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
                 PsiExpression psiExpression = (PsiExpression) element;
                 final PsiType type = psiExpression.getType();
                 if (Objects.nonNull(type)) {
+                    System.out.println("type.getCanonicalText() = " + type.getCanonicalText());
                     final TextExpression typeName = new TextExpression(type.getCanonicalText());
                     template.addVariable(TYPE, typeName, typeName, true);
                 }
