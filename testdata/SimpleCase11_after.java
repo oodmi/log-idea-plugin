@@ -5,11 +5,13 @@ public class LoggerTest {
 
     public String method1() {
         Object o = new Object();
-        method2(o.toString().logi<caret>);
+        String newVar = o.toString();
+        log.info(newVar);
+        String i = method2(newVar);
     }
 
-    public void method2(String s) {
-
+    public String method2(String s) {
+        return "";
     }
 }
 

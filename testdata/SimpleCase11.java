@@ -5,11 +5,11 @@ public class LoggerTest {
 
     public String method1() {
         Object o = new Object();
-        method2(o.toString().logi<caret>);
+        String i = method2(o.toString().logi<caret>);
     }
 
-    public void method2(String s) {
-
+    public String method2(String s) {
+        return "";
     }
 }
 

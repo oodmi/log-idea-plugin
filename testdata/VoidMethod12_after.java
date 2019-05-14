@@ -4,6 +4,10 @@ package com.oodmi.service;
 public class LoggerTest {
 
     public void method1() {
-        log.info("1");
+        method2().logi  ;
+    }
+
+    public void method2() {
+
     }
 }

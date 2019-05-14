@@ -37,19 +37,26 @@ public class LoggerInfoTemplateTest extends LoggerTestCase {
         doTest();
     }
 
-    public void testSimpleCase9() {
+    public void testFieldLogger9() {
         doTest();
     }
 
-    public void testSimpleCase10() {
-        doTest();
+    public void testWithoutLogger10() {
+        myFixture.configureByFile(getTestName(false) + ".java");
+        try{
+            myFixture.type('\t');
+            myFixture.completeBasic();
+        }catch (Exception e){
+            myFixture.checkResultByFile(getTestName(false) + "_after.java", true);
+        }
+
     }
 
     public void testSimpleCase11() {
         doTest();
     }
 
-    public void testSimpleCase12() {
+    public void testVoidMethod12() {
         doTest();
     }
 
