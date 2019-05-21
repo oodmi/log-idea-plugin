@@ -9,31 +9,35 @@ public class LoggerInfoTemplateTest extends LoggerTestCase {
         return new File("testdata").getAbsolutePath();
     }
 
-    public void testSimpleCase1() {
+    public void testParentIsPsiExpressionStatement1() {
         doTest();
     }
 
-    public void testSimpleCase2() {
+    public void testParentIsPsiLocalVariable2() {
         doTest();
     }
 
-    public void testSimpleCase3() {
+    public void testParentIsPsiExpressionStatementAndElementIsPsiMethodCallExpression3() {
         doTest();
     }
 
-    public void testSimpleCase4() {
+    public void testParentIsPsiLocalVariableAndElementIsPsiMethodCallExpression4() {
         doTest();
     }
 
-    public void testSimpleCase6() {
+    public void testParentIsPsiReturnStatement5() {
         doTest();
     }
 
-    public void testSimpleCase7() {
+    public void testParentIsPsiAssignmentExpression6() {
         doTest();
     }
 
-    public void testSimpleCase8() {
+    public void testParentIsPsiExpressionList7() {
+        doTest();
+    }
+
+    public void testParentIsPsiExpressionListAndElementIsPsiMethodCallExpression8() {
         doTest();
     }
 
@@ -52,7 +56,7 @@ public class LoggerInfoTemplateTest extends LoggerTestCase {
 
     }
 
-    public void testSimpleCase11() {
+    public void testParentIsPsiExpressionListAndElementIsPsiMethodCallExpressionAndWithAssignment11() {
         doTest();
     }
 
@@ -60,7 +64,11 @@ public class LoggerInfoTemplateTest extends LoggerTestCase {
         doTest();
     }
 
-    public void testSimpleCase13() {
+    public void testElementIsPsiReferenceExpression13() {
+        doTest();
+    }
+
+    public void testParentIsPsiExpressionStatementAndElementIsPsiReferenceExpression14() {
         doTest();
     }
 
