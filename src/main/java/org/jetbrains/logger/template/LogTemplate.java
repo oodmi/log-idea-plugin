@@ -9,14 +9,11 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiAssignmentExpression;
-import com.intellij.psi.PsiBinaryExpression;
 import com.intellij.psi.PsiDeclarationStatement;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiExpression;
-import com.intellij.psi.PsiExpressionList;
 import com.intellij.psi.PsiExpressionStatement;
 import com.intellij.psi.PsiLocalVariable;
-import com.intellij.psi.PsiNewExpression;
 import com.intellij.psi.PsiReferenceExpression;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.util.PsiTreeUtil;
@@ -51,49 +48,25 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         PsiElement parent = element.getParent();
         boolean needBraces = isNeedBraces(element);
         if (parent instanceof PsiExpressionStatement) {
-            return "$" + LOGGER + "$." + level + "("
-                    + (needBraces ? "\"\" + " : "")
-                    + "$" + EXPR + "$);$END$";
+            return getTemplateInsteadOfParent(needBraces);
         }
 
-        PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
-        if (Objects.nonNull(parentOfType)) {
-            if (parent instanceof PsiLocalVariable) {
-                String localVariable = ((PsiLocalVariable) parent).getName();
-                final String template = getParent(element).getText() + "\n"
-                        + "$" + LOGGER + "$." + level + "("
-                        + (needBraces ? "\"\" + " : "")
-                        + localVariable + ");$END$";
-                return template;
-            }
+        if (Objects.nonNull(PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class))
+                && parent instanceof PsiLocalVariable) {
+            String localVariable = ((PsiLocalVariable) parent).getName();
+            return getTemplateAfterParent(element, needBraces, localVariable);
         }
 
         if (parent instanceof PsiAssignmentExpression) {
             final String localVariable = ((PsiAssignmentExpression) parent).getLExpression().getText();
-            final String template = getParent(element).getText() + "\n"
-                    + "$" + LOGGER + "$." + level + "("
-                    + (needBraces ? "\"\" + " : "")
-                    + localVariable + ");$END$";
-            return template;
+            return getTemplateAfterParent(element, needBraces, localVariable);
         }
 
         if (element instanceof PsiReferenceExpression) {
-            return "$" + LOGGER + "$." + level + "("
-                    + (needBraces ? "\"\" + " : "")
-                    + "$" + EXPR + "$);\n"
-                    + getParent(element).getText()
-                    + "$END$";
+            return getTemplateBeforeParent(element, needBraces);
         }
 
-        final String endText = replaceLast(getParent(element).getText(),
-                                           element.getText(),
-                                           "$" + VAR + "$");
-        final String template = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
-                + "$" + LOGGER + "$." + level + "("
-                + (needBraces ? "\"\" + " : "")
-                + "$" + VAR + "$);\n"
-                + endText + "$END$";
-        return template;
+        return getTemplateWithVar(element, needBraces);
     }
 
     @Override
@@ -110,6 +83,8 @@ public class LogTemplate extends StringBasedPostfixTemplate {
 
         //delete ot not current expression
         PsiElement parent = expr.getParent();
+        System.out.println("\nparent = " + parent);
+        System.out.println("expr = " + expr + "\n");
         if (parent instanceof PsiExpressionStatement) {
             if (parent.getText().endsWith(";")) {
                 document.deleteString(parent.getTextRange().getStartOffset(), parent.getTextRange().getEndOffset());
@@ -133,74 +108,126 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         String loggerName = getLoggerName(element);
         TextExpression log = new TextExpression(loggerName);
         PsiElement parent = element.getParent();
-        if (!(parent instanceof PsiExpressionStatement)) {
 
-            /*
-             use local variable. i.e:
-                int i = 1; method1(method2(i.logi));
-            ->  log.info("" + i);
-                method1(method2(i));
-            */
-            if (element instanceof PsiReferenceExpression) {
-                template.addVariable(LOGGER, log, log, true);
-                template.addVariable(EXPR, new TextExpression(element.getText()), false);
-                return;
-            }
-
-            /*
-             use local variable. i.e:
-               int i = 1.logi;
-            -> int i = 1;
-               log.info("" + i);
-            */
-            PsiDeclarationStatement parentOfType = PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class);
-            if (parent instanceof PsiAssignmentExpression || Objects.nonNull(parentOfType)) {
-                // if element is PsiBinaryExpression or PsiNewExpression, we'll need to use creation of variable
-                //if parent is PsiExpressionList, we'll need to use creation of variable
-                // otherwise just use local variable
-                if (!(element instanceof PsiBinaryExpression)
-                        && !(element instanceof PsiNewExpression)
-                        && !(parent instanceof PsiExpressionList)) {
-                    //                if (!(element instanceof PsiMethodCallExpression)) {
-                    template.addVariable(LOGGER, log, log, true);
-                    return;
-//                }
-                }
-            }
-
-            /*
-                this block creates variable. i.e.:
-                int i = 1;
-                method1(method2(i).logi);
-             -> int i = 1;
-                var s = method2(i);
-                log.info("" + s);
-                method1(s)'
-             */
-            {
-                PsiExpression psiExpression = (PsiExpression) element;
-                final PsiType type = psiExpression.getType();
-                if (Objects.nonNull(type)) {
-                    System.out.println("type.getCanonicalText() = " + type.getCanonicalText());
-                    final TextExpression typeName = new TextExpression(type.getCanonicalText());
-                    template.addVariable(TYPE, typeName, typeName, true);
-                }
-
-                final TextExpression varName = new TextExpression("newVar");
-                template.addVariable(VAR, varName, varName, true);
-
-                template.addVariable(LOGGER, log, log, true);
-
-                template.addVariable(EXPR, new TextExpression(element.getText()), false);
-            }
-        } else {
-            /*
-                this block just use expression. i.e:
-                "something".logi
-             -> log.info("something");
-             */
-            template.addVariable(EXPR, new TextExpression(element.getText()), false);
-            template.addVariable(LOGGER, log, log, true);
+        if (parent instanceof PsiExpressionStatement) {
+            setVariableInsteadOfParent(template, element, log);
+            return;
         }
+
+        if (element instanceof PsiReferenceExpression) {
+            setVariableBeforeParent(template, element, log);
+            return;
+        }
+
+        if (Objects.nonNull(PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class))
+                && parent instanceof PsiLocalVariable) {
+            setVariableAfterParent(template, element, log);
+            return;
+        }
+
+        if (parent instanceof PsiAssignmentExpression) {
+            setVariableAfterParent(template, element, log);
+            return;
+        }
+
+        setVariableWithVar(template, element, log);
+
+    }
+
+    private void setVariableInsteadOfParent(@NotNull Template template, @NotNull PsiElement element, TextExpression log) {
+        /*
+            this block just use expression. i.e:
+            "something".logi
+         -> log.info("something");
+        */
+        template.addVariable(EXPR, new TextExpression(element.getText()), false);
+        template.addVariable(LOGGER, log, log, true);
+    }
+
+    private String getTemplateInsteadOfParent(boolean needBraces) {
+        String template = "$" + LOGGER + "$." + level + "("
+                + (needBraces ? "\"\" + " : "")
+                + "$" + EXPR + "$);$END$";
+        System.out.println("\nLogTemplate.getTemplateInsteadOfParent\n");
+        return template;
+    }
+
+    private void setVariableAfterParent(@NotNull Template template, @NotNull PsiElement element, TextExpression log) {
+        /*
+         use local variable. i.e:
+           int i = 1.logi;
+        -> int i = 1;
+           log.info("" + i);
+        */
+        template.addVariable(LOGGER, log, log, true);
+    }
+
+    private String getTemplateAfterParent(@NotNull PsiElement element, boolean needBraces, String localVariable) {
+        final String template = getParent(element).getText() + "\n"
+                + "$" + LOGGER + "$." + level + "("
+                + (needBraces ? "\"\" + " : "")
+                + localVariable + ");$END$";
+        System.out.println("\nLogTemplate.getTemplateAfterParent\n");
+        return template;
+    }
+
+    private void setVariableBeforeParent(@NotNull Template template, @NotNull PsiElement element, TextExpression log) {
+        /*
+            use local variable. i.e:
+            int i = 1; method1(method2(i.logi));
+        ->  log.info("" + i);
+            method1(method2(i));
+        */
+        template.addVariable(LOGGER, log, log, true);
+        template.addVariable(EXPR, new TextExpression(element.getText()), false);
+    }
+
+    private String getTemplateBeforeParent(@NotNull PsiElement element, boolean needBraces) {
+        String template = "$" + LOGGER + "$." + level + "("
+                + (needBraces ? "\"\" + " : "")
+                + "$" + EXPR + "$);\n"
+                + getParent(element).getText()
+                + "$END$";
+        System.out.println("\nLogTemplate.getTemplateBeforeParent\n");
+        return template;
+    }
+
+    private void setVariableWithVar(@NotNull Template template, @NotNull PsiElement element, TextExpression log) {
+        /*
+            this block creates variable. i.e.:
+            int i = 1;
+            method1(method2(i).logi);
+         -> int i = 1;
+            var s = method2(i);
+            log.info("" + s);
+            method1(s)'
+         */
+        PsiExpression psiExpression = (PsiExpression) element;
+        final PsiType type = psiExpression.getType();
+        if (Objects.nonNull(type)) {
+            System.out.println("type.getCanonicalText() = " + type.getCanonicalText());
+            final TextExpression typeName = new TextExpression(type.getCanonicalText());
+            template.addVariable(TYPE, typeName, typeName, true);
+        }
+
+        final TextExpression varName = new TextExpression("newVar");
+        template.addVariable(VAR, varName, varName, true);
+
+        template.addVariable(LOGGER, log, log, true);
+
+        template.addVariable(EXPR, new TextExpression(element.getText()), false);
+    }
+
+    private String getTemplateWithVar(@NotNull PsiElement element, boolean needBraces) {
+        final String endText = replaceLast(getParent(element).getText(),
+                                           element.getText(),
+                                           "$" + VAR + "$");
+        final String template = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
+                + "$" + LOGGER + "$." + level + "("
+                + (needBraces ? "\"\" + " : "")
+                + "$" + VAR + "$);\n"
+                + endText + "$END$";
+        System.out.println("LogTemplate.getTemplateWithVar");
+        return template;
     }
 }
