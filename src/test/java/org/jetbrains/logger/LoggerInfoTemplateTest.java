@@ -72,4 +72,8 @@ public class LoggerInfoTemplateTest extends LoggerTestCase {
         doTest();
     }
 
+    public void testParentIsPsiExpressionListAndElementIsPsiNewExpression15() {
+        doTest();
+    }
+
 }
