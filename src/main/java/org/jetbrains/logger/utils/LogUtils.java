@@ -21,6 +21,7 @@ public class LogUtils {
     public static final String PARENT = "parent";
     public static final String TYPE = "type";
     public static final String VAR = "var";
+    public static final String CURSOR = "cursor";
 
     private LogUtils() {
 
@@ -79,18 +80,14 @@ public class LogUtils {
         }
     }
 
-    public static boolean isNeedBraces(PsiElement element) {
+    public static boolean isTypeString(PsiElement element) {
         PsiExpression expression = (PsiExpression) element;
         final PsiType type = expression.getType();
-        if (type instanceof PsiPrimitiveType) {
-            return true;
-        }
         try {
             String className = ((PsiClassReferenceType) type).getClassName();
-            boolean need = !"String".equals(className);
-            return need;
+            return "String".equals(className);
         } catch (Exception e) {
-            return true;
+            return false;
         }
     }
 

@@ -6,7 +6,7 @@ public class LoggerTest {
     public String method1() {
         Object o = new Object();
         String newVar = o.toString();
-        log.info(newVar);
+        log.info("newVar=" + newVar);
         method2(newVar);
     }
 

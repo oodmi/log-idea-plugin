@@ -5,7 +5,7 @@ public class LoggerTest {
 
     public void method1() {
         String i = method2();
-        log.info(i);
+        log.info("i=" + i);
     }
 
     public String method2() {

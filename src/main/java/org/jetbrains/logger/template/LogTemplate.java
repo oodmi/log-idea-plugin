@@ -14,6 +14,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiExpression;
 import com.intellij.psi.PsiExpressionStatement;
 import com.intellij.psi.PsiLocalVariable;
+import com.intellij.psi.PsiMethodCallExpression;
 import com.intellij.psi.PsiReferenceExpression;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.util.PsiTreeUtil;
@@ -25,12 +26,13 @@ import java.util.Objects;
 
 import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
 import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
+import static org.jetbrains.logger.utils.LogUtils.CURSOR;
 import static org.jetbrains.logger.utils.LogUtils.LOGGER;
 import static org.jetbrains.logger.utils.LogUtils.TYPE;
 import static org.jetbrains.logger.utils.LogUtils.VAR;
 import static org.jetbrains.logger.utils.LogUtils.getLoggerName;
 import static org.jetbrains.logger.utils.LogUtils.getParent;
-import static org.jetbrains.logger.utils.LogUtils.isNeedBraces;
+import static org.jetbrains.logger.utils.LogUtils.isTypeString;
 import static org.jetbrains.logger.utils.LogUtils.replaceLast;
 
 public class LogTemplate extends StringBasedPostfixTemplate {
@@ -46,27 +48,26 @@ public class LogTemplate extends StringBasedPostfixTemplate {
     @Override
     public String getTemplateString(@NotNull PsiElement element) {
         PsiElement parent = element.getParent();
-        boolean needBraces = isNeedBraces(element);
         if (parent instanceof PsiExpressionStatement) {
-            return getTemplateInsteadOfParent(needBraces);
+            return getTemplateInsteadOfParent(element);
         }
 
         if (Objects.nonNull(PsiTreeUtil.getParentOfType(element, PsiDeclarationStatement.class))
                 && parent instanceof PsiLocalVariable) {
             String localVariable = ((PsiLocalVariable) parent).getName();
-            return getTemplateAfterParent(element, needBraces, localVariable);
+            return getTemplateAfterParent(element, localVariable);
         }
 
         if (parent instanceof PsiAssignmentExpression) {
             final String localVariable = ((PsiAssignmentExpression) parent).getLExpression().getText();
-            return getTemplateAfterParent(element, needBraces, localVariable);
+            return getTemplateAfterParent(element, localVariable);
         }
 
         if (element instanceof PsiReferenceExpression) {
-            return getTemplateBeforeParent(element, needBraces);
+            return getTemplateBeforeParent(element);
         }
 
-        return getTemplateWithVar(element, needBraces);
+        return getTemplateWithVar(element);
     }
 
     @Override
@@ -140,13 +141,30 @@ public class LogTemplate extends StringBasedPostfixTemplate {
             "something".logi
          -> log.info("something");
         */
-        template.addVariable(EXPR, new TextExpression(element.getText()), false);
+        if ((element instanceof PsiMethodCallExpression)
+                || (element instanceof PsiReferenceExpression)
+                || !isTypeString(element)) {
+            template.addVariable(EXPR, new TextExpression(element.getText()), false);
+        }
         template.addVariable(LOGGER, log, log, true);
+        template.addVariable(CURSOR, new TextExpression(""), true);
     }
 
-    private String getTemplateInsteadOfParent(boolean needBraces) {
+    private String getTemplateInsteadOfParent(@NotNull PsiElement element) {
+        if (!(element instanceof PsiMethodCallExpression)
+                && !(element instanceof PsiReferenceExpression)
+                && isTypeString(element)) {
+            String text = "\"" + "$" + CURSOR + "$" + element.getText().substring(1);
+            String template = "$" + LOGGER + "$." + level + "("
+                    + text
+                    + ");$END$";
+            System.out.println("\nLogTemplate.getTemplateInsteadOfParent\n");
+            return template;
+        }
+        final String temp = element instanceof PsiReferenceExpression ? "$" + EXPR + "$=" : "$" + CURSOR + "$";
+
         String template = "$" + LOGGER + "$." + level + "("
-                + (needBraces ? "\"\" + " : "")
+                + "\"" + temp + "\" + "
                 + "$" + EXPR + "$);$END$";
         System.out.println("\nLogTemplate.getTemplateInsteadOfParent\n");
         return template;
@@ -162,10 +180,10 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         template.addVariable(LOGGER, log, log, true);
     }
 
-    private String getTemplateAfterParent(@NotNull PsiElement element, boolean needBraces, String localVariable) {
+    private String getTemplateAfterParent(@NotNull PsiElement element, String localVariable) {
         final String template = getParent(element).getText() + "\n"
                 + "$" + LOGGER + "$." + level + "("
-                + (needBraces ? "\"\" + " : "")
+                + "\"" + localVariable + "=\" + "
                 + localVariable + ");$END$";
         System.out.println("\nLogTemplate.getTemplateAfterParent\n");
         return template;
@@ -182,9 +200,9 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         template.addVariable(EXPR, new TextExpression(element.getText()), false);
     }
 
-    private String getTemplateBeforeParent(@NotNull PsiElement element, boolean needBraces) {
+    private String getTemplateBeforeParent(@NotNull PsiElement element) {
         String template = "$" + LOGGER + "$." + level + "("
-                + (needBraces ? "\"\" + " : "")
+                + "\"" + "$" + EXPR + "$" + "=\" + "
                 + "$" + EXPR + "$);\n"
                 + getParent(element).getText()
                 + "$END$";
@@ -218,13 +236,13 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         template.addVariable(EXPR, new TextExpression(element.getText()), false);
     }
 
-    private String getTemplateWithVar(@NotNull PsiElement element, boolean needBraces) {
+    private String getTemplateWithVar(@NotNull PsiElement element) {
         final String endText = replaceLast(getParent(element).getText(),
                                            element.getText(),
                                            "$" + VAR + "$");
         final String template = "$" + TYPE + "$" + " $" + VAR + "$ = " + "$" + EXPR + "$;\n"
                 + "$" + LOGGER + "$." + level + "("
-                + (needBraces ? "\"\" + " : "")
+                + "\"" + "$" + VAR + "$" + "=\" + "
                 + "$" + VAR + "$);\n"
                 + endText + "$END$";
         System.out.println("LogTemplate.getTemplateWithVar");

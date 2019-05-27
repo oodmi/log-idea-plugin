@@ -4,7 +4,7 @@ package com.oodmi.service;
 public class LoggerTest {
 
     public void method1() {
-        log.info(method2());
+        log.info("" + method2());
     }
 
     public String method2() {

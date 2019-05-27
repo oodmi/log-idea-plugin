@@ -8,7 +8,7 @@ apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'java'
 
 group 'oodmi'
-version '0.0.4'
+version '0.0.5'
 
 intellij {
     version '2019.1.1'
@@ -17,6 +17,8 @@ intellij {
 }
 patchPluginXml {
     changeNotes """
-      Add support PsiNewExpression and PsiBinaryExpression.<br>
+      Add new tests.<br>
+      Add bew feature (using name of variable in logger to concat with expression value).<br>
+      Add normal description in settings.<br>
       </em>"""
 }

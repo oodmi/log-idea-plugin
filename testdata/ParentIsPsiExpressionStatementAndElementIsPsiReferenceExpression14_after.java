@@ -5,6 +5,6 @@ public class LoggerTest {
 
     public String method1() {
         String s = "1";
-        log.info(s);
+        log.info("s=" + s);
     }
 }

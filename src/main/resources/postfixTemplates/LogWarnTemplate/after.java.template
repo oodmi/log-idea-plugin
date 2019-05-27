@@ -4,7 +4,7 @@ public class LoggerTest {
 
     public String method() {
         String newVar = "1";
-        <spot>logger</spot>.warn(newVar)
+        <spot>logger</spot>.warn("newVar=" + newVar);
         return newVar;
     }
 }
