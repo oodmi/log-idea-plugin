@@ -1,5 +1,16 @@
 package org.jetbrains.logger.template;
 
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
+import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
+import static org.jetbrains.logger.utils.LogUtils.CURSOR;
+import static org.jetbrains.logger.utils.LogUtils.LOGGER;
+import static org.jetbrains.logger.utils.LogUtils.TYPE;
+import static org.jetbrains.logger.utils.LogUtils.VAR;
+import static org.jetbrains.logger.utils.LogUtils.getLoggerName;
+import static org.jetbrains.logger.utils.LogUtils.getParent;
+import static org.jetbrains.logger.utils.LogUtils.isTypeString;
+import static org.jetbrains.logger.utils.LogUtils.replaceLast;
+
 import com.intellij.codeInsight.template.Template;
 import com.intellij.codeInsight.template.TemplateManager;
 import com.intellij.codeInsight.template.impl.TextExpression;
@@ -23,17 +34,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.logger.LogTemplateProvider;
 
 import java.util.Objects;
-
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.IS_NON_VOID;
-import static com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils.selectorAllExpressionsWithCurrentOffset;
-import static org.jetbrains.logger.utils.LogUtils.CURSOR;
-import static org.jetbrains.logger.utils.LogUtils.LOGGER;
-import static org.jetbrains.logger.utils.LogUtils.TYPE;
-import static org.jetbrains.logger.utils.LogUtils.VAR;
-import static org.jetbrains.logger.utils.LogUtils.getLoggerName;
-import static org.jetbrains.logger.utils.LogUtils.getParent;
-import static org.jetbrains.logger.utils.LogUtils.isTypeString;
-import static org.jetbrains.logger.utils.LogUtils.replaceLast;
 
 public class LogTemplate extends StringBasedPostfixTemplate {
 
@@ -146,8 +146,10 @@ public class LogTemplate extends StringBasedPostfixTemplate {
                 || !isTypeString(element)) {
             template.addVariable(EXPR, new TextExpression(element.getText()), false);
         }
-        template.addVariable(LOGGER, log, log, true);
-        template.addVariable(CURSOR, new TextExpression(""), true);
+        template.addVariable(LOGGER, log, log, false);
+        if (!(element instanceof PsiReferenceExpression)) {
+            template.addVariable(CURSOR, new TextExpression(""), true);
+        }
     }
 
     private String getTemplateInsteadOfParent(@NotNull PsiElement element) {
@@ -177,7 +179,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         -> int i = 1;
            log.info("" + i);
         */
-        template.addVariable(LOGGER, log, log, true);
+        template.addVariable(LOGGER, log, log, false);
     }
 
     private String getTemplateAfterParent(@NotNull PsiElement element, String localVariable) {
@@ -196,7 +198,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         ->  log.info("" + i);
             method1(method2(i));
         */
-        template.addVariable(LOGGER, log, log, true);
+        template.addVariable(LOGGER, log, log, false);
         template.addVariable(EXPR, new TextExpression(element.getText()), false);
     }
 
@@ -231,7 +233,7 @@ public class LogTemplate extends StringBasedPostfixTemplate {
         final TextExpression varName = new TextExpression("newVar");
         template.addVariable(VAR, varName, varName, true);
 
-        template.addVariable(LOGGER, log, log, true);
+        template.addVariable(LOGGER, log, log, false);
 
         template.addVariable(EXPR, new TextExpression(element.getText()), false);
     }

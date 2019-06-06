@@ -1,6 +1,6 @@
 public class LoggerTest {
 
-    private static final <spot>logger</spot> = LoggerFactory.getLogger(LoggerTest.class);
+    private static final Logger <spot>logger</spot> = LoggerFactory.getLogger(LoggerTest.class);
 
     public String method() {
         String newVar = "1";
