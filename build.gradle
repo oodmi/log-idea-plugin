@@ -1,18 +1,14 @@
 plugins {
     id 'org.jetbrains.intellij' version '0.4.7'
 }
-
-
 apply plugin: 'idea'
 apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'java'
-
 group 'oodmi'
-version '0.0.5'
-
+version '1.0.0'
 intellij {
-    version '2019.1.1'
-    plugins 'coverage' //Bundled plugin dependencies
+    version '2020.1.1'
+    plugins 'java'
     pluginName 'oodmi.log-idea-plugin'
 }
 patchPluginXml {
@@ -20,5 +16,6 @@ patchPluginXml {
       Add new tests.<br>
       Add bew feature (using name of variable in logger to concat with expression value).<br>
       Add normal description in settings.<br>
+      Add support of new IDEA version.<br>
       </em>"""
 }

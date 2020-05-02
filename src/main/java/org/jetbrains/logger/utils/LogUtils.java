@@ -1,14 +1,17 @@
 package org.jetbrains.logger.utils;
 
+import com.intellij.lang.jvm.JvmModifier;
+import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiExpression;
 import com.intellij.psi.PsiField;
-import com.intellij.psi.PsiPrimitiveType;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.impl.source.PsiClassReferenceType;
 import com.intellij.psi.util.PsiTreeUtil;
+import com.intellij.refactoring.util.CommonRefactoringUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -18,23 +21,11 @@ import java.util.Objects;
 public class LogUtils {
 
     public static final String LOGGER = "logger";
-    public static final String PARENT = "parent";
     public static final String TYPE = "type";
     public static final String VAR = "var";
     public static final String CURSOR = "cursor";
 
     private LogUtils() {
-
-    }
-
-    public static List<String> getPrimitives() {
-        return Arrays.asList("Boolean",
-                             "Double",
-                             "Float",
-                             "Integer",
-                             "Short",
-                             "Byte",
-                             "Character");
     }
 
     public static List<String> getLombok() {
@@ -53,31 +44,12 @@ public class LogUtils {
         return Arrays.asList("log", "logger", "logging", "lgr");
     }
 
-    public static String getModifier() {
-        return "static";
-    }
-
     public static String replaceLast(String string, String from, String to) {
         int lastIndex = string.lastIndexOf(from);
         if (lastIndex < 0) return string;
         String substring = string.substring(lastIndex);
         String tail = substring.replace(from, to);
         return string.substring(0, lastIndex) + tail;
-    }
-
-    public static boolean isPrimitive(PsiElement element) {
-        PsiExpression expression = (PsiExpression) element;
-        final PsiType type = expression.getType();
-        if (type instanceof PsiPrimitiveType) {
-            return true;
-        }
-        try {
-            String className = ((PsiClassReferenceType) type).getClassName();
-            boolean isPrimitive = getPrimitives().contains(className);
-            return isPrimitive;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     public static boolean isTypeString(PsiElement element) {
@@ -112,18 +84,13 @@ public class LogUtils {
         PsiAnnotation[] annotations = psiClass.getAnnotations();
         for (PsiAnnotation annotation : annotations) {
             String qualifiedName = annotation.getQualifiedName();
-            System.out.println(qualifiedName);
             if (qualifiedName != null && getLombok().contains(qualifiedName)) {
                 return getLombokName();
             }
         }
         PsiField[] allFields = psiClass.getAllFields();
         for (PsiField field : allFields) {
-            boolean flag = Arrays.stream(field.getModifiers()).anyMatch(it -> {
-                System.out.println(it.name());
-                return getModifier().equalsIgnoreCase(it.name());
-            });
-            if (flag) {
+            if (field.hasModifier(JvmModifier.STATIC)) {
                 String clazz = field.getType().getCanonicalText();
                 boolean suitable = getLoggers().stream().anyMatch(it -> clazz.toLowerCase().contains(it));
                 if (suitable) {
@@ -134,4 +101,11 @@ public class LogUtils {
         return null;
     }
 
+    public static void showErrorHint(@NotNull Project project, @NotNull Editor editor) {
+        CommonRefactoringUtil.showErrorHint(project,
+                                            editor,
+                                            "Can't find logger",
+                                            "Can't find logger",
+                                            "");
+    }
 }

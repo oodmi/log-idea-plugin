@@ -26,13 +26,11 @@ public class LogTemplateProvider implements PostfixTemplateProvider {
             });
 
     public LogTemplateProvider() {
-        System.out.println("LogTemplateProvider.LogTemplateProvider");
     }
 
     @NotNull
     @Override
     public Set<PostfixTemplate> getTemplates() {
-        System.out.println("LogTemplateProvider.getTemplates");
         return templates;
     }
 
@@ -43,12 +41,10 @@ public class LogTemplateProvider implements PostfixTemplateProvider {
 
     @Override
     public void preExpand(@NotNull PsiFile psiFile, @NotNull Editor editor) {
-        System.out.println("LogTemplateProvider.preExpand");
     }
 
     @Override
     public void afterExpand(@NotNull PsiFile psiFile, @NotNull Editor editor) {
-        System.out.println("LogTemplateProvider.afterExpand");
     }
 
     @NotNull
